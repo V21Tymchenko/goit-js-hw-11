@@ -24,7 +24,7 @@ let lightbox = new SimpleLightbox('.photo-card a', {
 let currentPage = 1;
 let totalImg = 0;
 let inputValue = '';
-
+let response = '';
 // слушатель на сабмит формы
 formRefs.addEventListener('submit', onSubmitSearch);
 
@@ -48,38 +48,36 @@ function onSubmitSearch(event) {
 }
 
 async function renderMarkUp(value) {
-    try {
-        response = await searchImage(value, currentPage);
+  try {
+    response = await searchImage(value, currentPage);
+    entText.classList.add('is-hidden');
+    if (response.data.totalHits === 0) {
+      Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+      return;
+    }
+    Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
 
-        if (response.data.totalHits === 0) {
-            Notify.failure(
-                'Sorry, there are no images matching your search query. Please try again.'
-            );
-            return;
-        }
-        Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
+    renderImage(response.data.hits);
+    lightbox.refresh();
 
-        renderImage(response.data.hits);
-        lightbox.refresh();
-
-        scrollOfSite();
-   
-    } catch (error) {
+    scrollOfSite();
+  } catch (error) {
     console.error(error);
-    }
+  }
+}
+// функция плавного скролла
+function scrollOfSite() {
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+  window.scrollBy({
+    top: cardHeight * -50,
+    behavior: 'smooth',
+  });
+}
 
-// фуенкция плавного скролла
-    function scrollOfSite() {
-        const { height: cardHeight } = document
-            .querySelector('.gallery')
-            .firstElementChild.getBoundingClientRect();
-        window.scrollBy({
-            top: cardHeight * -50,
-            behavior: 'smooth',
-        });
-    }
-
-   
 //  бесконечный скролл страницы
 window.addEventListener('scroll', infinityScroll);
 
@@ -95,8 +93,8 @@ function infinityScroll() {
   }
   if (documentRef.bottom < document.documentElement.clientHeight + 200) {
     currentPage += 1;
-    totalImg += response.data.hits.length;
 
+    totalImg += response.data.hits.length;
     renderMarkUp(inputValue);
     lightbox.refresh();
   }
